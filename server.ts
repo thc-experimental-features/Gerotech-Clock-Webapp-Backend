@@ -18,9 +18,20 @@ interface RequestBody {
   formData: FormData;
 }
 
+// Rate limiting middleware
+const { rateLimit } = require('express-rate-limit');
+const limiter = rateLimit({
+  windowMs: 1000,
+  limit: 1, 
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 const app: Express = express();
-app.use(cors());
 app.use(express.json());
+app.use(cors());
+app.options('*', cors());
+app.use(limiter);
 
 // Ensure OPENAI_API_KEY exists
 if (!process.env.OPENAI_API_KEY) {
