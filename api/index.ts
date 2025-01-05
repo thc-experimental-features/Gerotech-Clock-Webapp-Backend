@@ -3,28 +3,31 @@ import express, { json } from 'express';
 import { Express, Request, Response } from 'express-serve-static-core';
 import cors from 'cors';
 import OpenAI from "openai";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Define interfaces for type safety
 interface FormData {
-  ageRange: string;
-  ageBand: string;
-  country: string;
-  healthStatus: string;
-  gender?: string;
-  livingArrangement?: string;
+    ageRange: string;
+    ageBand: string;
+    country: string;
+    healthStatus: string;
+    gender?: string;
+    livingArrangement?: string;
 }
 
 interface RequestBody {
-  formData: FormData;
+    formData: FormData;
 }
 
 // Rate limiting middleware
 const { rateLimit } = require('express-rate-limit');
 const limiter = rateLimit({
-  windowMs: 1000,
-  limit: 1, 
-  standardHeaders: true,
-  legacyHeaders: false
+    windowMs: 1000,
+    limit: 1,
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
 const app: Express = express();
@@ -35,29 +38,29 @@ app.use(limiter);
 
 // Ensure OPENAI_API_KEY exists
 if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is not defined in environment variables');
+    throw new Error('OPENAI_API_KEY is not defined in environment variables');
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+    apiKey: process.env.OPENAI_API_KEY
 });
 
 app.get('/', (req, res) => {
-  return res.json({
-    message: 'API Works'
-  })
+    return res.json({
+        message: 'API Works'
+    })
 })
 
 app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response) => {
-  try {
-    const { formData } = req.body;
+    try {
+        const { formData } = req.body;
 
-    if (!formData) {
-      return res.status(400).json({ error: 'Form data is required' });
-    }
+        if (!formData) {
+            return res.status(400).json({ error: 'Form data is required' });
+        }
 
-    // Create a demographic-focused prompt
-    const prompt = `Generate a demographic profile for the following elderly population segment:
+        // Create a demographic-focused prompt
+        const prompt = `Generate a demographic profile for the following elderly population segment:
     - Age Range: ${formData.ageRange}
     - Age Band: ${formData.ageBand}
     - Country: ${formData.country}
@@ -73,12 +76,12 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
 
     Do NOT create a specific fictional person or individual story. Instead, provide demographic insights and general characteristics.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are an AI assistant that generates demographic profiles for elderly populations. Based on the information about the person .Your responses should be in the following JSON format:
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                {
+                    role: "system",
+                    content: `You are an AI assistant that generates demographic profiles for elderly populations. Based on the information about the person .Your responses should be in the following JSON format:
       {
         "persona": {
           "summary": "General demographic description of this population segment",
@@ -108,39 +111,39 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
       - Focus on demographic trends and patterns
       - Provide general characteristics of the population segment
       - Base information on demographic data and research
-      - Keep descriptions general and representative of the group` 
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7, // Added for more consistent outputs
-    });
+      - Keep descriptions general and representative of the group`
+                },
+                {
+                    role: "user",
+                    content: prompt,
+                },
+            ],
+            temperature: 0.7, // Added for more consistent outputs
+        });
 
-    // Parse the response to ensure it's valid JSON
-    const responseText = completion.choices[0].message.content;
-    if (!responseText) {
-      throw new Error('Empty response from AI');
-    }
+        // Parse the response to ensure it's valid JSON
+        const responseText = completion.choices[0].message.content;
+        if (!responseText) {
+            throw new Error('Empty response from AI');
+        }
 
-    try {
-      const jsonResponse = JSON.parse(responseText);
-      res.json(jsonResponse);
-    } catch (parseError) {
-      console.error('Error parsing AI response:', parseError);
-      res.status(500).json({ error: 'Invalid response format from AI' });
+        try {
+            const jsonResponse = JSON.parse(responseText);
+            res.json(jsonResponse);
+        } catch (parseError) {
+            console.error('Error parsing AI response:', parseError);
+            res.status(500).json({ error: 'Invalid response format from AI' });
+        }
+    } catch (error) {
+        console.error('Error generating demographic profile:', error);
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: error instanceof Error ? error.message : 'Unknown error occurred'
+        });
     }
-  } catch (error) {
-    console.error('Error generating demographic profile:', error);
-    res.status(500).json({ 
-      error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-  }
 });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
