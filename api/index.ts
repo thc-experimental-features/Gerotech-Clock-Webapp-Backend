@@ -58,7 +58,7 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
         }
 
         // Create a demographic-focused prompt
-        const prompt = `Generate a demographic profile for the following elderly population segment:
+        const prompt = `Generate a demographic profile for the following population segment:
     - Age Range: ${formData.ageRange}
     - Country: ${formData.country}
     - Health Status: ${formData.healthStatus}
@@ -66,10 +66,10 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
     - Living Arrangement: ${formData.livingArrangement}
 
     Provide general characteristics and experiences typical for this demographic group. Focus on:
-    1. Common life experiences and historical events that shaped this generation in this region
-    2. Typical technology usage patterns for this age group and location
-    3. Common health considerations based on the demographic profile
-    4. General lifestyle patterns typical for this age and cultural context
+    1. Common life experiences and historical events that shaped this generation in this ${formData.country}
+    2. Experience with consumer technology for people aged ${formData.ageRange} years old in ${formData.country}
+    3. Common health considerations based for ${formData.gender} and historical events of ${formData.country}
+    4. General lifestyle patterns typical for people aged ${formData.ageRange} years old and cultural context of ${formData.country}
 
     Do NOT create a specific fictional person or individual story. Instead, provide demographic insights and general characteristics.`;
 
@@ -78,7 +78,7 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
             messages: [
                 {
                     role: "system",
-                    content: `You are an AI assistant that generates demographic profiles for elderly populations. Based on the information about the person .Your responses should be in the following JSON format:
+                    content: `You are an AI assistant that generates demographic profiles. Based on the information about the person .Your responses should be in the following JSON format:
       {
         "persona": {
           "summary": "General demographic description of this population segment",
@@ -93,13 +93,13 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
         ],
         "technology": {
           "familiarity": "Typical tech familiarity level for this demographic",
-          "devices": ["Common devices used by this age group in this region"],
+          "devices": ["Common devices used by ${formData.ageRange} years old in ${formData.country}"],
           "challenges": ["Common tech challenges for this demographic"]
         },
         "health": {
           "current": "Typical health status description for this demographic",
-          "conditions": ["Common health conditions for this age group"],
-          "predictions": ["Typical health considerations for this demographic"]
+          "conditions": ["Common health conditions from data about ${formData.ageRange} years olds in ${formData.country}"],
+          "predictions": ["Typical health considerations for ${formData.ageRange} years olds in ${formData.country}"]
         }
       }
 
