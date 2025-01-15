@@ -7,10 +7,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Define interfaces for type safety
 interface FormData {
     ageRange: string;
-    ageBand: string;
     country: string;
     healthStatus: string;
     gender?: string;
@@ -62,11 +60,10 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
         // Create a demographic-focused prompt
         const prompt = `Generate a demographic profile for the following elderly population segment:
     - Age Range: ${formData.ageRange}
-    - Age Band: ${formData.ageBand}
     - Country: ${formData.country}
     - Health Status: ${formData.healthStatus}
-    ${formData.gender ? `- Gender: ${formData.gender}` : ''}
-    ${formData.livingArrangement ? `- Living Arrangement: ${formData.livingArrangement}` : ''}
+    - Gender: ${formData.gender}
+    - Living Arrangement: ${formData.livingArrangement}
 
     Provide general characteristics and experiences typical for this demographic group. Focus on:
     1. Common life experiences and historical events that shaped this generation in this region
@@ -77,7 +74,7 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
     Do NOT create a specific fictional person or individual story. Instead, provide demographic insights and general characteristics.`;
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-4o",
             messages: [
                 {
                     role: "system",
@@ -111,7 +108,8 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
       - Focus on demographic trends and patterns
       - Provide general characteristics of the population segment
       - Base information on demographic data and research
-      - Keep descriptions general and representative of the group`
+      - Keep descriptions general and representative of the group
+      - Respond in JSON format, following the structure above, don't add 3 backticks or ANY other formatting to the response. PROVIDE IN RAW JSON FORMAT.`
                 },
                 {
                     role: "user",
@@ -123,6 +121,7 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
 
         // Parse the response to ensure it's valid JSON
         const responseText = completion.choices[0].message.content;
+        console.log('AI response:', responseText);
         if (!responseText) {
             throw new Error('Empty response from AI');
         }
