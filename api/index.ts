@@ -4,20 +4,9 @@ import { Express, Request, Response } from 'express-serve-static-core';
 import cors from 'cors';
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import { RequestBody } from './types';
 
 dotenv.config();
-
-interface FormData {
-    ageRange: string;
-    country: string;
-    healthStatus: string;
-    gender?: string;
-    livingArrangement?: string;
-}
-
-interface RequestBody {
-    formData: FormData;
-}
 
 // Rate limiting middleware
 const { rateLimit } = require('express-rate-limit');
@@ -59,7 +48,8 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
 
         // Create a demographic-focused prompt
         const prompt = `Generate a demographic profile for the following population segment:
-    - Age Range: ${formData.ageRange}
+    - Years Born: ${formData.yearsBorn}
+    - Current Age: ${formData.age}
     - Country: ${formData.country}
     - Health Status: ${formData.healthStatus}
     - Gender: ${formData.gender}
@@ -67,11 +57,12 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
 
     Provide general characteristics and experiences typical for this demographic group. Focus on:
     1. Common life experiences and historical events that shaped this generation in this ${formData.country}
-    2. Experience with consumer technology for people aged ${formData.ageRange} years old in ${formData.country}
+    2. Experience with consumer technology for people aged ${formData.yearsBorn} years old in ${formData.country}
     3. Common health considerations based for ${formData.gender} and historical events of ${formData.country}
-    4. General lifestyle patterns typical for people aged ${formData.ageRange} years old and cultural context of ${formData.country}
+    4. General lifestyle patterns typical for people aged ${formData.yearsBorn} years old and cultural context of ${formData.country}
 
-    Do NOT create a specific fictional person or individual story. Instead, provide demographic insights and general characteristics.`;
+    Do NOT create a specific fictional person or individual story. Instead, provide demographic insights and general characteristics.
+    The birth year is ${formData.yearsBorn}. When listing historical events, calculate the person's age as (eventYear - ${formData.yearsBorn}).`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
@@ -87,19 +78,20 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
         "historicalEvents": [
           {
             "year": "YYYY",
+            "ageAtEvent": "Age of the demographic group when the event occurred, calculated as (eventYear - ${formData.yearsBorn})",
             "event": "Significant historical event for this demographic",
             "description": "How this event typically affected this population segment"
           }
         ],
         "technology": {
           "familiarity": "Typical tech familiarity level for this demographic",
-          "devices": ["Common devices used by ${formData.ageRange} years old in ${formData.country}"],
+          "devices": ["Common devices used by ${formData.yearsBorn} years old in ${formData.country}"],
           "challenges": ["Common tech challenges for this demographic"]
         },
         "health": {
           "current": "Typical health status description for this demographic",
-          "conditions": ["Common health conditions from data about ${formData.ageRange} years olds in ${formData.country}"],
-          "predictions": ["Typical health considerations for ${formData.ageRange} years olds in ${formData.country}"]
+          "conditions": ["Common health conditions from data about ${formData.yearsBorn} years olds in ${formData.country}"],
+          "predictions": ["Typical health considerations for ${formData.yearsBorn} years olds in ${formData.country}"]
         }
       }
 
