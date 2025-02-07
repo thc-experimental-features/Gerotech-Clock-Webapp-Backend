@@ -74,10 +74,15 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
                     content: `You are an AI assistant that generates demographic health and events profiles. Based on the information about the person. Your responses should be in the following JSON format:
       {
         "persona": {
-          "summary": "General demographic description of this population segment",
+          "summary": "General demographic description of this population segment (at most 100 words)",
           "age": ${formData.age}
+          "gender": ${formData.gender}
+          "country": ${formData.country}
+          "healthStatus": ${formData.healthStatus}
+          "livingArrangement": ${formData.livingArrangement}
+          (Note for the gender, country, healthStatus and livingArrangement, use the form data provided and don't make up any information, make the first letter of the gender, country, healthStatus and livingArrangement uppercase)
         },
-        "historicalEvents": [
+        "historicalEvents": [Exactly 3 historical events for the ${formData.yearsBorn} years old in ${formData.country} with the following format:
           {
             "year": "YYYY",
             "ageAtEvent": "Age of the demographic group when the event occurred, calculated as (eventYear - ${formData.yearsBorn})",
@@ -87,7 +92,7 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
         ],
         "technology": {
             "familiarity": "Typical tech familiarity level for this demographic. This is a description of how familiar this demographic typically is with the following devices and should not be a category,
-            it should be a concise description of how familiar this demographic typically is with the technology in general without mentioning the demographic group and only the familiarity",
+            it should be a concise description of how familiar this demographic typically is with the technology in general without mentioning the demographic group and only the familiarity (at most 15 words, minimum 10 words)",
             "devices": [
                 {
                     "name": "Telephone",
