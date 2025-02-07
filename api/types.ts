@@ -3,8 +3,9 @@ export interface FormData {
     yearsBorn: string;
     country: string;
     healthStatus: string;
-    gender?: string;
-    livingArrangement?: string;
+    diseases: string[];
+    gender: string;
+    livingArrangement: string;
 }
 
 export interface RequestBody {
