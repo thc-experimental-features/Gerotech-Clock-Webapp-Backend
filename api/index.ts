@@ -1,53 +1,57 @@
-import 'dotenv/config';
-import express, { json } from 'express';
-import { Express, Request, Response } from 'express-serve-static-core';
-import cors from 'cors';
+import "dotenv/config";
+import express from "express";
+import { Express, Request, Response } from "express-serve-static-core";
+import cors from "cors";
 import OpenAI from "openai";
 import dotenv from "dotenv";
-import { RequestBody } from './types';
+import { RequestBody } from "./types";
 
 dotenv.config();
 
 // Rate limiting middleware
-const { rateLimit } = require('express-rate-limit');
+const { rateLimit } = require("express-rate-limit");
 const limiter = rateLimit({
-    windowMs: 1000,
-    limit: 1,
-    standardHeaders: true,
-    legacyHeaders: false
+  windowMs: 1000,
+  limit: 1,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const app: Express = express();
+
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(cors());
-app.options('*', cors());
+app.options("*", cors());
 app.use(limiter);
 
 // Ensure OPENAI_API_KEY exists
 if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not defined in environment variables');
+  throw new Error("OPENAI_API_KEY is not defined in environment variables");
 }
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-app.get('/', (req, res) => {
-    return res.json({
-        message: 'API Works'
-    })
-})
+app.get("/", (req, res) => {
+  return res.json({
+    message: "API Works",
+  });
+});
 
-app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response) => {
+app.post(
+  "/api/openai",
+  async (req: Request<{}, {}, RequestBody>, res: Response) => {
     try {
-        const { formData } = req.body;
+      const { formData } = req.body;
 
-        if (!formData) {
-            return res.status(400).json({ error: 'Form data is required' });
-        }
+      if (!formData) {
+        return res.status(400).json({ error: "Form data is required" });
+      }
 
-        // Create a demographic-focused prompt
-        const prompt = `Generate a demographic profile for the following population segment:
+      // Create a demographic-focused prompt
+      const prompt = `Generate a demographic profile for the following population segment:
     - Years Born: ${formData.yearsBorn}
     - Current Age: ${formData.age}
     - Country: ${formData.country}
@@ -66,12 +70,12 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
     Do NOT create a specific fictional person or individual story. Instead, provide demographic insights and general characteristics.
     The birth year is ${formData.yearsBorn}. When listing historical events, calculate the person's age as (eventYear - ${formData.yearsBorn}).`;
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: `You are an AI assistant that generates demographic health and events profiles. Based on the information about the person. Your responses should be in the following JSON format:
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an AI assistant that generates demographic health and events profiles. Based on the information about the person. Your responses should be in the following JSON format:
       {
         "persona": {
           "summary": "General demographic description of this population segment (at most 100 words)",
@@ -144,40 +148,42 @@ app.post('/api/openai', async (req: Request<{}, {}, RequestBody>, res: Response)
       - Base information on demographic data and research
       - Keep descriptions general and representative of the group
       - For each disease in the current array, provide realistic challenges and appropriate risk levels
-      - Respond in JSON format, following the structure above, don't add 3 backticks or ANY other formatting to the response. PROVIDE IN RAW JSON FORMAT.`
-                },
-                {
-                    role: "user",
-                    content: prompt,
-                },
-            ],
-            temperature: 0.7, // Added for more consistent outputs
-        });
+      - Respond in JSON format, following the structure above, don't add 3 backticks or ANY other formatting to the response. PROVIDE IN RAW JSON FORMAT.`,
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.7, // Added for more consistent outputs
+      });
 
-        // Parse the response to ensure it's valid JSON
-        const responseText = completion.choices[0].message.content;
-        console.log('AI response:', responseText);
-        if (!responseText) {
-            throw new Error('Empty response from AI');
-        }
+      // Parse the response to ensure it's valid JSON
+      const responseText = completion.choices[0].message.content;
+      console.log("AI response:", responseText);
+      if (!responseText) {
+        throw new Error("Empty response from AI");
+      }
 
-        try {
-            const jsonResponse = JSON.parse(responseText);
-            res.json(jsonResponse);
-        } catch (parseError) {
-            console.error('Error parsing AI response:', parseError);
-            res.status(500).json({ error: 'Invalid response format from AI' });
-        }
+      try {
+        const jsonResponse = JSON.parse(responseText);
+        res.json(jsonResponse);
+      } catch (parseError) {
+        console.error("Error parsing AI response:", parseError);
+        res.status(500).json({ error: "Invalid response format from AI" });
+      }
     } catch (error) {
-        console.error('Error generating demographic profile:', error);
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: error instanceof Error ? error.message : 'Unknown error occurred'
-        });
+      console.error("Error generating demographic profile:", error);
+      res.status(500).json({
+        error: "Internal Server Error",
+        message:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      });
     }
-});
+  },
+);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
